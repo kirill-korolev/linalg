@@ -16,6 +16,7 @@ namespace linalg {
     template <int N, int M, typename T>
     class Matrix {
     public:
+
         Matrix();
         explicit Matrix(const T& value);
         Matrix(const std::initializer_list<std::initializer_list<T>>& list);
@@ -52,6 +53,8 @@ namespace linalg {
         template <int K>
         Matrix<N + K, M, T> vstack(const Matrix<K, M, T>& rhs) const;
 
+        const int rows = N;
+        const int cols = M;
     protected:
         void clear();
     protected:
@@ -64,7 +67,7 @@ namespace linalg {
 namespace linalg {
 
     template <int N, int M, typename T>
-    Matrix<N, M, T>::Matrix(): _size(0), _data(nullptr){}
+    Matrix<N, M, T>::Matrix(): Matrix(T()){}
 
     template <int N, int M, typename T>
     Matrix<N, M, T>::Matrix(const T& value){

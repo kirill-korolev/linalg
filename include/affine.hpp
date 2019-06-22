@@ -5,8 +5,8 @@
 #ifndef LINALG_AFFINE_H
 #define LINALG_AFFINE_H
 
-#include "matrix.h"
-#include "core.h"
+#include "matrix.hpp"
+#include "core.hpp"
 #include <array>
 #include <cmath>
 
