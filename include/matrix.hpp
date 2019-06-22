@@ -10,24 +10,19 @@
 
 namespace linalg {
 
-    template <size_t N, typename T>
+    template <int N, typename T>
     class Vector;
 
-    using shape_t = std::pair<size_t, size_t>;
-
-    template<typename T>
-    using initialized_matrix_t = std::initializer_list<std::initializer_list<T>>;
-
-    template <size_t N, size_t M, typename T=double>
-    class Matrix{
+    template <int N, int M, typename T>
+    class Matrix {
     public:
-
-        explicit Matrix(const T& initial=0);
-        Matrix(const initialized_matrix_t<T>& matrix);
-        Matrix(const Matrix& cpy);
-        Matrix(Matrix&& rvalue);
+        Matrix();
+        explicit Matrix(const T& value);
+        Matrix(const std::initializer_list<std::initializer_list<T>>& list);
+        Matrix(const Matrix& other);
+        Matrix(Matrix&& other) noexcept;
         Matrix& operator=(const Matrix& rhs);
-        Matrix&& operator=(Matrix&& rhs);
+        Matrix& operator=(Matrix&& rhs) noexcept;
         virtual ~Matrix();
 
         Matrix& operator+=(const Matrix& rhs);
@@ -36,65 +31,62 @@ namespace linalg {
         Matrix& operator-=(const Matrix& rhs);
         Matrix operator-(const Matrix& rhs);
 
-        template <size_t K>
+        template <int K>
         Matrix<N, K, T> operator*(const Matrix<M, K, T>& rhs);
         Matrix& operator*=(const Matrix<M, M, T>& rhs);
-        Matrix operator*(const T& constant);
+        Matrix operator*(const T& rhs);
 
         Matrix<M, N, T> transpose();
 
-        size_t getRows() const;
-        size_t getCols() const;
-        shape_t getShape() const;
-
-        T& operator()(size_t row, size_t col);
-        const T& operator()(size_t row, size_t col) const;
+        T& operator()(int row, int col);
+        const T& operator()(int row, int col) const;
 
         template <typename U>
-        friend Matrix operator*(const U& constant, const Matrix& matrix){
-            return matrix * constant;
+        friend Matrix operator*(const U& lhs, const Matrix& rhs){
+            return rhs * lhs;
         }
 
-        template <size_t K>
+        template <int K>
         Matrix<N, M + K, T> hstack(const Matrix<N, K, T>& rhs) const;
 
-        template <size_t K>
+        template <int K>
         Matrix<N + K, M, T> vstack(const Matrix<K, M, T>& rhs) const;
 
-        void swapRows(size_t i, size_t j);
     protected:
-        void assert(size_t row, size_t col) const;
         void clear();
     protected:
         T* _data;
-        size_t _size;
+        int _size;
     };
 
 }
 
 namespace linalg {
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T>::Matrix(const T& initial){
+    template <int N, int M, typename T>
+    Matrix<N, M, T>::Matrix(): _size(0), _data(nullptr){}
+
+    template <int N, int M, typename T>
+    Matrix<N, M, T>::Matrix(const T& value){
         _size = N * M;
         _data = static_cast<T*>(operator new[](_size * sizeof(T)));
 
         for(auto i = 0; i != _size; ++i){
-            _data[i] = initial;
+            _data[i] = value;
         }
     }
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T>::Matrix(const initialized_matrix_t<T>& matrix){
-        auto n = matrix.size();
-        if(N != n) throw std::invalid_argument("row dimensions differs");
+    template <int N, int M, typename T>
+    Matrix<N, M, T>::Matrix(const std::initializer_list<std::initializer_list<T>>& list){
+        auto n = list.size();
+        if(N != n) throw std::invalid_argument("rows dimensions differs");
         _size = N * M;
         _data = static_cast<T*>(operator new[](_size * sizeof(T)));
 
         int i = 0;
 
-        for(auto row = matrix.begin(); row != matrix.end(); ++row){
-            if(M != row->size()) throw std::invalid_argument("column dimensions differs");
+        for(auto row = list.begin(); row != list.end(); ++row){
+            if(M != row->size()) throw std::invalid_argument("columns dimensions differs");
             for(auto col = row->begin(); col != row->end(); ++col){
                 auto val = *col;
                 _data[i] = val;
@@ -103,24 +95,24 @@ namespace linalg {
         }
     }
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T>::Matrix(const Matrix& cpy){
-        _size = cpy._size;
+    template <int N, int M, typename T>
+    Matrix<N, M, T>::Matrix(const Matrix& other){
+        _size = other._size;
         _data = static_cast<T*>(operator new[](_size * sizeof(T)));
         for(auto i = 0; i != _size; ++i){
-            _data[i] = cpy._data[i];
+            _data[i] = other._data[i];
         }
     }
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T>::Matrix(Matrix&& rvalue){
-        _size = rvalue._size;
-        _data = rvalue._data;
-        rvalue._size = 0;
-        rvalue._data = nullptr;
+    template <int N, int M, typename T>
+    Matrix<N, M, T>::Matrix(Matrix&& other) noexcept {
+        _size = other._size;
+        _data = other._data;
+        other._size = 0;
+        other._data = nullptr;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T>& Matrix<N, M, T>::operator=(const Matrix& rhs){
         if(this != &rhs){
             clear();
@@ -133,8 +125,8 @@ namespace linalg {
         return *this;
     }
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T>&& Matrix<N, M, T>::operator=(Matrix&& rhs){
+    template <int N, int M, typename T>
+    Matrix<N, M, T>& Matrix<N, M, T>::operator=(Matrix&& rhs) noexcept {
         if(this != &rhs){
             clear();
             _size = rhs._size;
@@ -145,19 +137,19 @@ namespace linalg {
         return *this;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T>::~Matrix(){
         clear();
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T>& Matrix<N, M, T>::operator+=(const Matrix& rhs){
         Matrix<N, M, T> sum = *this + rhs;
         *this = sum;
         return *this;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T> Matrix<N, M, T>::operator+(const Matrix& rhs){
         Matrix<N, M, T> sum(0);
         for(auto i = 0; i < _size; ++i){
@@ -166,14 +158,14 @@ namespace linalg {
         return sum;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T>& Matrix<N, M, T>::operator-=(const Matrix& rhs){
         Matrix<N, M, T> sub = *this - rhs;
         *this = sub;
         return *this;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T> Matrix<N, M, T>::operator-(const Matrix& rhs){
         Matrix<N, M, T> sub(0);
         for(auto i = 0; i < _size; ++i){
@@ -182,8 +174,8 @@ namespace linalg {
         return sub;
     }
 
-    template <size_t N, size_t M, typename T>
-    template <size_t K>
+    template <int N, int M, typename T>
+    template <int K>
     Matrix<N, K, T> Matrix<N, M, T>::operator*(const Matrix<M, K, T>& rhs){
         Matrix<N, K, T> product(0);
 
@@ -198,27 +190,27 @@ namespace linalg {
         return product;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<N, M, T>& Matrix<N, M, T>::operator*=(const Matrix<M, M, T>& rhs){
         Matrix<N, M, T> product = (*this) * rhs;
         *this = product;
         return *this;
     }
 
-    template <size_t N, size_t M, typename T>
-    Matrix<N, M, T> Matrix<N, M, T>::operator*(const T& constant){
+    template <int N, int M, typename T>
+    Matrix<N, M, T> Matrix<N, M, T>::operator*(const T& rhs){
         Matrix<N, M, T> product;
 
         for(auto i = 0; i < N; ++i){
             for(auto j = 0; j < M; ++j){
-                product(i, j) = (*this)(i, j) * constant;
+                product(i, j) = (*this)(i, j) * rhs;
             }
         }
 
         return product;
     }
 
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     Matrix<M, N, T> Matrix<N, M, T>::transpose(){
         Matrix<M, N, T> matrix;
 
@@ -231,22 +223,8 @@ namespace linalg {
         return matrix;
     }
 
-    template <size_t N, size_t M, typename T>
-    size_t Matrix<N, M, T>::getRows() const{
-        return N;
-    }
 
-    template <size_t N, size_t M, typename T>
-    size_t Matrix<N, M, T>::getCols() const{
-        return M;
-    }
-
-    template <size_t N, size_t M, typename T>
-    shape_t Matrix<N, M, T>::getShape() const{
-        return std::make_pair(N, M);
-    }
-
-    template <size_t N, size_t M, typename T>
+    template <int N, int M, typename T>
     void Matrix<N, M, T>::clear(){
         for(auto i = 0; i != _size; ++i){
             _data[i].~T();
@@ -255,27 +233,20 @@ namespace linalg {
         _size = 0;
     }
 
-    template <size_t N, size_t M, typename T>
-    void Matrix<N, M, T>::assert(size_t row, size_t col) const{
-        if(row >= N) throw std::invalid_argument("row value is too big");
-        if(col >= M) throw std::invalid_argument("column value is too big");
-    }
 
-    template <size_t N, size_t M, typename T>
-    T& Matrix<N, M, T>::operator()(size_t row, size_t col){
-        assert(row, col);
+    template <int N, int M, typename T>
+    T& Matrix<N, M, T>::operator()(int row, int col){
         return _data[row * M + col];
     }
 
-    template <size_t N, size_t M, typename T>
-    const T& Matrix<N, M, T>::operator()(size_t row, size_t col) const{
-        assert(row, col);
+    template <int N, int M, typename T>
+    const T& Matrix<N, M, T>::operator()(int row, int col) const {
         return _data[row * M + col];
     }
 
-    template <size_t N, size_t M, typename T>
-    template <size_t K>
-    Matrix<N, M + K, T> Matrix<N, M, T>::hstack(const Matrix<N, K, T>& rhs) const{
+    template <int N, int M, typename T>
+    template <int K>
+    Matrix<N, M + K, T> Matrix<N, M, T>::hstack(const Matrix<N, K, T>& rhs) const {
         Matrix<N, M + K, T> result;
 
         for(auto i = 0; i != N; ++i){
@@ -290,9 +261,9 @@ namespace linalg {
         return result;
     }
 
-    template <size_t N, size_t M, typename T>
-    template <size_t K>
-    Matrix<N + K, M, T> Matrix<N, M, T>::vstack(const Matrix<K, M, T>& rhs) const{
+    template <int N, int M, typename T>
+    template <int K>
+    Matrix<N + K, M, T> Matrix<N, M, T>::vstack(const Matrix<K, M, T>& rhs) const {
         Matrix<N + K, M, T> result;
 
         for(auto j = 0; j != M; ++j){
@@ -307,13 +278,6 @@ namespace linalg {
         return result;
     }
 
-    template <size_t N, size_t M, typename T>
-    void Matrix<N, M, T>::swapRows(size_t i, size_t j){
-        if(i >= N || j >= N) return;
-
-        for(auto k = 0; k != M; ++k)
-            std::swap(this->operator()(i, k), this->operator()(j, k));
-    }
 }
 
 #endif //LINALG_MATRIX_H

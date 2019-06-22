@@ -5,28 +5,24 @@
 #ifndef LINALG_CORE_H
 #define LINALG_CORE_H
 
-#include "matrix.h"
-#include "../utility/optional.h"
+#include "matrix.hpp"
 #include <cmath>
 #include <exception>
 
 namespace linalg {
 
-    template <size_t N, typename T=double>
-    using lufactorized_pair_t = std::pair<Matrix<N, N, T>, Matrix<N, N, T>>;
 
-
-    template <size_t N, typename T=double>
+    template <int N, typename T>
     Matrix<N, N, T> identity();
 
-    template <size_t N, typename T=double>
+    template <int N, typename T>
     Matrix<N, N, T> diagonal(const T& value);
 
-    template <size_t N, typename T=double>
-    double determinant(const Matrix<N, N, T>& matrix);
+    //template <int N, typename T>
+    //double determinant(const Matrix<N, N, T>& matrix);
 
-    template <size_t N, typename T=double>
-    Optional<lufactorized_pair_t<N, T>> lufactor(const Matrix<N, N, T>& matrix);
+    //template <int N, typename T>
+    //Optional<lufactorized_pair_t<N, T>> lufactor(const Matrix<N, N, T>& matrix);
 
     template <typename T=double>
     using Matrix2d = Matrix<2, 2, T>;
@@ -38,7 +34,7 @@ namespace linalg {
 
 namespace linalg {
 
-    template <size_t N, typename T>
+    template <int N, typename T>
     Matrix<N, N, T> identity(){
         Matrix<N, N, T> id(0);
         for(auto i = 0; i < N; ++i){
@@ -47,7 +43,7 @@ namespace linalg {
         return id;
     }
 
-    template <size_t N, typename T>
+    template <int N, typename T>
     Matrix<N, N, T> diagonal(const T& value){
         Matrix<N, N, T> diag(0);
         for(auto i = 0; i < N; ++i){
@@ -56,7 +52,7 @@ namespace linalg {
         return diag;
     }
 
-    template <size_t N, typename T>
+    /*template <int N, typename T>
     double determinant(const Matrix<N, N, T>& matrix){
         auto luOptional = lufactor(matrix);
 
@@ -76,7 +72,7 @@ namespace linalg {
     };
 
 
-    template <size_t N, typename T>
+    template <int N, typename T>
     Optional<lufactorized_pair_t<N, T>> lufactor(const Matrix<N, N, T>& matrix){
         Matrix<N, N, T> l;
         Matrix<N, N, T> u;
@@ -107,7 +103,7 @@ namespace linalg {
         }
 
         return std::make_pair(l, u);
-    }
+    }*/
 
 }
 
